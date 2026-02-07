@@ -62,6 +62,20 @@ export default function ProfileScreen() {
 
   const roleBadge = user ? getRoleBadge(user.role) : null;
 
+  // Agency menu items
+  const agencyMenuItems = [
+    {
+      section: 'Mon Agence',
+      items: [
+        { icon: 'dashboard', label: 'Dashboard Agence', onPress: () => router.push('/agency') },
+        { icon: 'home-work', label: 'Mes Annonces', badge: 45, onPress: () => router.push('/agency/properties') },
+        { icon: 'people', label: 'Mes Leads', badge: 12, onPress: () => router.push('/agency/leads') },
+        { icon: 'add-home', label: 'Ajouter une annonce', onPress: () => router.push('/agency/add-property') },
+        { icon: 'card-membership', label: 'Mon Abonnement', onPress: () => router.push('/agency/subscription') },
+      ],
+    },
+  ];
+
   // Admin menu items
   const adminMenuItems = [
     {
@@ -236,6 +250,42 @@ export default function ProfileScreen() {
             <Text style={styles.statLabel}>Visites</Text>
           </View>
         </Animated.View>
+
+        {/* Agency Menu - Only for agency users */}
+        {user?.role === 'agency' && agencyMenuItems.map((section, sectionIdx) => (
+          <Animated.View 
+            key={section.section}
+            entering={FadeInDown.delay(150 + sectionIdx * 50).duration(400)}
+            style={[styles.menuSection, styles.agencySection]}
+          >
+            <Text style={[styles.menuSectionTitle, styles.agencySectionTitle]}>{section.section}</Text>
+            {section.items.map((item, idx) => (
+              <Pressable 
+                key={item.label}
+                style={styles.menuItem}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  item.onPress();
+                }}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.menuIconBox, styles.agencyIconBox]}>
+                    <MaterialIcons name={item.icon as any} size={20} color={theme.primary} />
+                  </View>
+                  <Text style={styles.menuItemLabel}>{item.label}</Text>
+                </View>
+                <View style={styles.menuItemRight}>
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <View style={[styles.menuBadge, { backgroundColor: theme.primary }]}>
+                      <Text style={styles.menuBadgeText}>{item.badge}</Text>
+                    </View>
+                  )}
+                  <MaterialIcons name="chevron-right" size={22} color={theme.textMuted} />
+                </View>
+              </Pressable>
+            ))}
+          </Animated.View>
+        ))}
 
         {/* Admin Menu - Only for admin users */}
         {user?.role === 'admin' && adminMenuItems.map((section, sectionIdx) => (
@@ -586,5 +636,15 @@ const styles = StyleSheet.create({
   },
   adminIconBox: {
     backgroundColor: theme.errorLight,
+  },
+  agencySection: {
+    borderWidth: 1,
+    borderColor: theme.primaryBg,
+  },
+  agencySectionTitle: {
+    color: theme.primary,
+  },
+  agencyIconBox: {
+    backgroundColor: theme.primaryBg,
   },
 });
