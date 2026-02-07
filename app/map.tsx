@@ -12,8 +12,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import MapView, { Marker, Callout, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import Animated, { FadeInDown, FadeInUp, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeInUp, SlideInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { theme, borderRadius, shadows } from '../constants/theme';
 import { formatPrice, NEIGHBORHOODS } from '../constants/config';
@@ -23,7 +22,7 @@ import { useApp } from '../contexts/AppContext';
 const { width, height } = Dimensions.get('window');
 
 // City coordinates
-const CITY_REGIONS: Record<string, Region> = {
+const CITY_REGIONS = {
   'Brazzaville': {
     latitude: -4.2634,
     longitude: 15.2429,
@@ -93,7 +92,6 @@ const statusFilters = [
 export default function MapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const mapRef = useRef<MapView>(null);
   const { favorites, toggleFavorite } = useApp();
   
   const [selectedCity, setSelectedCity] = useState<'Brazzaville' | 'Pointe-Noire'>('Brazzaville');
@@ -120,39 +118,24 @@ export default function MapScreen() {
 
   // Handle city change
   const handleCityChange = useCallback((city: 'Brazzaville' | 'Pointe-Noire') => {
-    Haptics.selectionAsync();
+    if (Platform.OS !== 'web') Haptics.selectionAsync();
     setSelectedCity(city);
     setSelectedNeighborhood(null);
     setSelectedProperty(null);
-    
-    const region = CITY_REGIONS[city];
-    mapRef.current?.animateToRegion(region, 500);
   }, []);
 
   // Handle marker press
   const handleMarkerPress = useCallback((property: Property) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedProperty(property);
   }, []);
 
   // Handle neighborhood filter
   const handleNeighborhoodSelect = useCallback((neighborhood: string | null) => {
-    Haptics.selectionAsync();
+    if (Platform.OS !== 'web') Haptics.selectionAsync();
     setSelectedNeighborhood(neighborhood);
     setSelectedProperty(null);
-    
-    if (neighborhood && NEIGHBORHOOD_COORDS[neighborhood]) {
-      const coord = NEIGHBORHOOD_COORDS[neighborhood];
-      mapRef.current?.animateToRegion({
-        latitude: coord.lat,
-        longitude: coord.lng,
-        latitudeDelta: 0.03,
-        longitudeDelta: 0.03,
-      }, 500);
-    } else {
-      mapRef.current?.animateToRegion(CITY_REGIONS[selectedCity], 500);
-    }
-  }, [selectedCity]);
+  }, []);
 
   // Get marker color based on property status
   const getMarkerColor = (property: Property) => {
@@ -173,7 +156,7 @@ export default function MapScreen() {
         <Pressable 
           style={styles.filterBtn}
           onPress={() => {
-            Haptics.selectionAsync();
+            if (Platform.OS !== 'web') Haptics.selectionAsync();
             setShowFilters(!showFilters);
           }}
         >
@@ -237,7 +220,7 @@ export default function MapScreen() {
                     selectedType === filter.id && styles.filterChipActive
                   ]}
                   onPress={() => {
-                    Haptics.selectionAsync();
+                    if (Platform.OS !== 'web') Haptics.selectionAsync();
                     setSelectedType(filter.id);
                   }}
                 >
@@ -260,7 +243,7 @@ export default function MapScreen() {
           {/* Status Filters */}
           <View style={styles.filterSection}>
             <Text style={styles.filterLabel}>Transaction</Text>
-            <View style={styles.filterRow}>
+            <View style={styles.filterRowWrap}>
               {statusFilters.map((filter) => (
                 <Pressable
                   key={filter.id}
@@ -269,7 +252,7 @@ export default function MapScreen() {
                     selectedStatus === filter.id && styles.statusChipActive
                   ]}
                   onPress={() => {
-                    Haptics.selectionAsync();
+                    if (Platform.OS !== 'web') Haptics.selectionAsync();
                     setSelectedStatus(filter.id);
                   }}
                 >
@@ -330,7 +313,7 @@ export default function MapScreen() {
           <Pressable 
             style={styles.resetBtn}
             onPress={() => {
-              Haptics.selectionAsync();
+              if (Platform.OS !== 'web') Haptics.selectionAsync();
               setSelectedType('all');
               setSelectedStatus('all');
               setSelectedNeighborhood(null);
@@ -342,96 +325,61 @@ export default function MapScreen() {
         </Animated.View>
       )}
 
-      {/* Map */}
+      {/* Map Container */}
       <View style={styles.mapContainer}>
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-          initialRegion={CITY_REGIONS[selectedCity]}
-          showsUserLocation
-          showsMyLocationButton={false}
-          showsCompass={false}
-          onPress={() => setSelectedProperty(null)}
-        >
-          {filteredProperties.map((property) => (
-            property.coordinates && (
-              <Marker
+        {/* Static Map Placeholder with Property Grid */}
+        <View style={styles.mapPlaceholder}>
+          <View style={styles.mapOverlay}>
+            <MaterialIcons name="map" size={48} color={theme.primary} />
+            <Text style={styles.mapPlaceholderTitle}>
+              Carte de {selectedCity}
+            </Text>
+            <Text style={styles.mapPlaceholderText}>
+              {filteredProperties.length} propriété{filteredProperties.length !== 1 ? 's' : ''} disponible{filteredProperties.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
+          
+          {/* Property Markers Grid */}
+          <ScrollView 
+            style={styles.markersContainer}
+            contentContainerStyle={styles.markersGrid}
+            showsVerticalScrollIndicator={false}
+          >
+            {filteredProperties.map((property) => (
+              <Pressable
                 key={property.id}
-                coordinate={{
-                  latitude: property.coordinates.lat,
-                  longitude: property.coordinates.lng,
-                }}
+                style={[
+                  styles.propertyMarker,
+                  selectedProperty?.id === property.id && styles.propertyMarkerSelected
+                ]}
                 onPress={() => handleMarkerPress(property)}
               >
+                <Image
+                  source={{ uri: property.images[0] }}
+                  style={styles.markerImage}
+                  contentFit="cover"
+                />
                 <View style={[
-                  styles.markerContainer,
-                  selectedProperty?.id === property.id && styles.markerContainerSelected
+                  styles.markerBadge,
+                  { backgroundColor: getMarkerColor(property) }
                 ]}>
-                  <View style={[
-                    styles.marker,
-                    { backgroundColor: getMarkerColor(property) }
-                  ]}>
-                    {property.isPremium && (
-                      <MaterialIcons name="star" size={10} color="#FFF" />
-                    )}
-                    {!property.isPremium && (
-                      <MaterialIcons 
-                        name={property.status === 'vente' ? 'sell' : 'key'} 
-                        size={10} 
-                        color="#FFF" 
-                      />
-                    )}
-                  </View>
-                  <View style={[
-                    styles.markerTail,
-                    { borderTopColor: getMarkerColor(property) }
-                  ]} />
+                  <MaterialIcons 
+                    name={property.status === 'vente' ? 'sell' : 'key'} 
+                    size={10} 
+                    color="#FFF" 
+                  />
                 </View>
-              </Marker>
-            )
-          ))}
-        </MapView>
-
-        {/* Map Controls */}
-        <View style={styles.mapControls}>
-          <Pressable 
-            style={styles.mapControlBtn}
-            onPress={() => {
-              Haptics.selectionAsync();
-              mapRef.current?.animateToRegion(CITY_REGIONS[selectedCity], 500);
-            }}
-          >
-            <MaterialIcons name="center-focus-strong" size={22} color={theme.textPrimary} />
-          </Pressable>
-          <Pressable 
-            style={styles.mapControlBtn}
-            onPress={() => {
-              Haptics.selectionAsync();
-              // Zoom in
-              mapRef.current?.getCamera().then((camera) => {
-                if (camera.zoom) {
-                  mapRef.current?.animateCamera({ zoom: camera.zoom + 1 });
-                }
-              });
-            }}
-          >
-            <MaterialIcons name="add" size={22} color={theme.textPrimary} />
-          </Pressable>
-          <Pressable 
-            style={styles.mapControlBtn}
-            onPress={() => {
-              Haptics.selectionAsync();
-              // Zoom out
-              mapRef.current?.getCamera().then((camera) => {
-                if (camera.zoom) {
-                  mapRef.current?.animateCamera({ zoom: camera.zoom - 1 });
-                }
-              });
-            }}
-          >
-            <MaterialIcons name="remove" size={22} color={theme.textPrimary} />
-          </Pressable>
+                <View style={styles.markerInfo}>
+                  <Text style={styles.markerPrice} numberOfLines={1}>
+                    {formatPrice(property.price)}
+                  </Text>
+                  <Text style={styles.markerLocation} numberOfLines={1}>
+                    {property.neighborhood}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
         </View>
 
         {/* Legend */}
@@ -511,7 +459,7 @@ export default function MapScreen() {
                 style={styles.favoriteBtn}
                 onPress={(e) => {
                   e.stopPropagation();
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   toggleFavorite(selectedProperty.id);
                 }}
               >
@@ -644,6 +592,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 8,
   },
+  filterRowWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    gap: 8,
+  },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -724,23 +678,75 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-  map: {
-    ...StyleSheet.absoluteFillObject,
+  mapPlaceholder: {
+    flex: 1,
+    backgroundColor: theme.backgroundSecondary,
   },
-  mapControls: {
-    position: 'absolute',
-    right: 16,
-    top: 16,
-    gap: 8,
-  },
-  mapControlBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.surface,
+  mapOverlay: {
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.md,
+    paddingVertical: 24,
+    backgroundColor: theme.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.borderLight,
+  },
+  mapPlaceholderTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.textPrimary,
+    marginTop: 12,
+  },
+  mapPlaceholderText: {
+    fontSize: 14,
+    color: theme.textSecondary,
+    marginTop: 4,
+  },
+  markersContainer: {
+    flex: 1,
+  },
+  markersGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 12,
+    gap: 12,
+  },
+  propertyMarker: {
+    width: (width - 48) / 3,
+    backgroundColor: theme.surface,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+    ...shadows.sm,
+  },
+  propertyMarkerSelected: {
+    borderWidth: 2,
+    borderColor: theme.primary,
+  },
+  markerImage: {
+    width: '100%',
+    height: 70,
+  },
+  markerBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  markerInfo: {
+    padding: 8,
+  },
+  markerPrice: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.primary,
+  },
+  markerLocation: {
+    fontSize: 10,
+    color: theme.textMuted,
+    marginTop: 2,
   },
   legend: {
     position: 'absolute',
@@ -767,32 +773,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: theme.textSecondary,
     fontWeight: '500',
-  },
-  markerContainer: {
-    alignItems: 'center',
-  },
-  markerContainerSelected: {
-    transform: [{ scale: 1.2 }],
-  },
-  marker: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFF',
-    ...shadows.md,
-  },
-  markerTail: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderTopWidth: 8,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    marginTop: -2,
   },
   propertyCard: {
     position: 'absolute',
