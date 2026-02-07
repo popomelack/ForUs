@@ -339,6 +339,7 @@ export const properties: Property[] = [
     isNew: false,
     isPremium: false,
     createdAt: '2025-01-10',
+    coordinates: { lat: -4.2550, lng: 15.2550 },
   },
   {
     id: 'prop-6',
@@ -367,6 +368,7 @@ export const properties: Property[] = [
     isNew: false,
     isPremium: true,
     createdAt: '2025-01-05',
+    coordinates: { lat: -4.2615, lng: 15.2475 },
   },
   {
     id: 'prop-7',
@@ -394,6 +396,7 @@ export const properties: Property[] = [
     isNew: false,
     isPremium: false,
     createdAt: '2025-01-12',
+    coordinates: { lat: -4.2580, lng: 15.2510 },
   },
   {
     id: 'prop-8',
@@ -421,6 +424,7 @@ export const properties: Property[] = [
     isNew: true,
     isPremium: false,
     createdAt: '2025-01-26',
+    coordinates: { lat: -4.2400, lng: 15.2600 },
   },
   {
     id: 'prop-9',
@@ -449,6 +453,7 @@ export const properties: Property[] = [
     isNew: false,
     isPremium: true,
     createdAt: '2025-01-08',
+    coordinates: { lat: -4.1900, lng: 15.2800 },
   },
   {
     id: 'prop-10',
@@ -477,6 +482,7 @@ export const properties: Property[] = [
     isNew: false,
     isPremium: false,
     createdAt: '2025-01-18',
+    coordinates: { lat: -4.7800, lng: 11.8500 },
   },
   // Additional properties for more data
   {
@@ -505,6 +511,7 @@ export const properties: Property[] = [
     isNew: false,
     isPremium: false,
     createdAt: '2025-01-22',
+    coordinates: { lat: -4.2450, lng: 15.2480 },
   },
   {
     id: 'prop-12',
@@ -531,6 +538,7 @@ export const properties: Property[] = [
     isNew: true,
     isPremium: false,
     createdAt: '2025-01-27',
+    coordinates: { lat: -4.2100, lng: 15.3000 },
   },
 ];
 

@@ -69,6 +69,11 @@ export default function SearchScreen() {
     toggleFavorite(propertyId);
   };
 
+  const handleOpenMap = () => {
+    Haptics.selectionAsync();
+    router.push('/map');
+  };
+
   const renderProperty = ({ item, index }: { item: any; index: number }) => (
     <Animated.View entering={FadeInDown.delay(index * 50).duration(400)}>
       <Pressable 
@@ -255,19 +260,28 @@ export default function SearchScreen() {
         <Text style={styles.resultsCount}>
           {filteredProperties.length} propriété{filteredProperties.length !== 1 ? 's' : ''} trouvée{filteredProperties.length !== 1 ? 's' : ''}
         </Text>
-        {activeFiltersCount > 0 && (
+        <View style={styles.resultsActions}>
           <Pressable 
-            style={styles.clearFiltersBtn}
-            onPress={() => {
-              Haptics.selectionAsync();
-              clearFilters();
-              setLocalQuery('');
-            }}
+            style={styles.mapButton}
+            onPress={handleOpenMap}
           >
-            <Text style={styles.clearFiltersText}>Effacer filtres</Text>
-            <MaterialIcons name="close" size={16} color={theme.primary} />
+            <MaterialIcons name="map" size={18} color={theme.primary} />
+            <Text style={styles.mapButtonText}>Carte</Text>
           </Pressable>
-        )}
+          {activeFiltersCount > 0 && (
+            <Pressable 
+              style={styles.clearFiltersBtn}
+              onPress={() => {
+                Haptics.selectionAsync();
+                clearFilters();
+                setLocalQuery('');
+              }}
+            >
+              <Text style={styles.clearFiltersText}>Effacer</Text>
+              <MaterialIcons name="close" size={16} color={theme.primary} />
+            </Pressable>
+          )}
+        </View>
       </View>
 
       {/* Results List */}
@@ -622,6 +636,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: theme.textSecondary,
+  },
+  resultsActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: theme.primaryBg,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: borderRadius.full,
+  },
+  mapButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.primary,
   },
   clearFiltersBtn: {
     flexDirection: 'row',
